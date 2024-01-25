@@ -20,17 +20,6 @@ module.exports = {
       name: '@electron-forge/maker-rpm',
       config: {},
     },
-    {
-      name: '@electron-forge/publisher-github',
-      config: {
-        repository: {
-          owner: 'bonguynvan',
-          name: 'hello-electron'
-        },
-        prerelease: false,
-        draft: true
-      }
-    }
   ],
   plugins: [
     {

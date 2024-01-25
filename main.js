@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, nativeTheme } = require('electron')
 const path = require('node:path')
 
 const createWindow = () => {
@@ -11,13 +11,23 @@ const createWindow = () => {
   })
   win.loadFile('./index.html')
   // win.loadURL('https://github.com/bonguynvan')
-  const contents = win.webContents
-console.log(contents)
 }
 
 app.whenReady().then(() => {
-  console.log('Hello from Electron 👋')
-  ipcMain.handle('ping', () => 'pong')
+
+  ipcMain.handle('dark-mode:toggle', () => {
+    console.log('check theme')
+    if (nativeTheme.shouldUseDarkColors) {
+      nativeTheme.themeSource = 'light'
+    } else {
+      nativeTheme.themeSource = 'dark'
+    }
+    return nativeTheme.shouldUseDarkColors
+  })
+
+  ipcMain.handle('dark-mode:system', () => {
+    nativeTheme.themeSource = 'system'
+  })
   createWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
