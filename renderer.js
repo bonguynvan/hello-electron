@@ -1,19 +1,33 @@
-// const information = document.getElementById('info')
-// information.innerText = `This app is using Chrome (v${versions.chrome()}), Node.js (v${versions.node()}), and Electron (v${versions.electron()})`
+async function testIt() {
+    const device = await navigator.bluetooth.requestDevice({acceptAllDevices: true})
+    document.getElementById('device-name').innerText = device.name || `ID: ${device.id}`
+}
 
-// const func = async () => {
-//     const response = await window.versions.ping()
-//     console.log(response)
-// }
-// func()
+document.getElementById('clickme').addEventListener('click', testIt)
 
-document.querySelector('#toggle-dark-mode').addEventListener('click', async () => {
-    const isDarkMode = await window.darkMode.toggle()
-    console.log('check', isDarkMode)
-    document.querySelector('#theme-source').innerText = isDarkMode ? "Dark" : "Light"
-})
+function cancelRequest() {
+    window.electronAPI.cancelBluetoothRequest()
+}
 
-document.getElementById('reset-to-system').addEventListener('click', async () => {
-    await window.darkMode.system()
-    document.getElementById('theme-source').innerText = 'System'
+document.getElementById('cancel').addEventListener('click', cancelRequest)
+
+window.electronAPI.bluetoothPairingRequest((event, details) => {
+    const response = {}
+    switch (details.pairingKind) {
+        case 'confirm':
+            response.confirmed = window.confirm(`Do you want to connect the device ${details.deviceId}?`)
+            break
+        case 'confirmPin':
+            response.confirmed = window.confirm(`Does the pin ${details.pin} match the pin displayed on device ${details.deviceId}?`)
+            break
+        case 'providePin':
+            const pin = window.prompt(`Please provide a pin for ${details.deviceId}:`)
+            if(pin) {
+                response.pin = pin
+                response.confirmed = true
+            } else {
+                response.confirmed = false
+            }
+    }
+    window.electronAPI.bluetoothPairingResponse(response)
 })
