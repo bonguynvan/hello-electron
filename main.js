@@ -1,38 +1,52 @@
-const { app, BrowserWindow, ipcMain, nativeTheme } = require('electron')
-const path = require('node:path')
+const { webContents } = require('electron')
+const {app, BrowserWindow} = require('electron/main')
 
-const createWindow = () => {
-  const win = new BrowserWindow({
-    height: 600,
+function createWindow() {
+  const mainWindow = new BrowserWindow({
     width: 800,
-    webPreferences: {
-        preload: path.join(__dirname, 'preload.js')
+    height: 600
+  })
+
+  mainWindow.webContents.session.on('select-hid-device', (event, details, callback) => {
+    // Add events to handle devices being added or removed before the callback on
+    // `select-hid-device` is called.
+    mainWindow.webContents.session.on('hid-device-added', (event, device) => {
+      console.log('hid-device-added Fire With ', device)
+      // Optionally update details.deviceList
+    })
+    mainWindow.webContents.session.on('hid-device-removed', (event, device) => {
+      console.log('hid-device-removed Fire With ', device)
+      // Optionally update details.deviceList
+    })
+
+    event.preventDefault()
+    if(details.deviceList && details.deviceList.length > 0) {
+      callback(details.deviceList[0].deviceId)
     }
   })
-  win.loadFile('./index.html')
-  // win.loadURL('https://github.com/bonguynvan')
+
+  mainWindow.webContents.session.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+    if(permission === 'hid' && details.securityOrigin === 'file:///') {
+      return true
+    }
+  })
+
+  mainWindow.webContents.session.setDevicePermissionHandler((details) => {
+    if(details.deviceType === 'hid' && details.origin === 'file://') {
+      return true
+    }
+  })
+  mainWindow.loadFile('index.html')
 }
 
 app.whenReady().then(() => {
-
-  ipcMain.handle('dark-mode:toggle', () => {
-    console.log('check theme')
-    if (nativeTheme.shouldUseDarkColors) {
-      nativeTheme.themeSource = 'light'
-    } else {
-      nativeTheme.themeSource = 'dark'
-    }
-    return nativeTheme.shouldUseDarkColors
-  })
-
-  ipcMain.handle('dark-mode:system', () => {
-    nativeTheme.themeSource = 'system'
-  })
   createWindow()
-  app.on('activate', () => {
+
+  app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 })
-app.on('window-all-closed', () => {
+
+app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') app.quit()
 })
